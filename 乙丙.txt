@@ -1,0 +1,73 @@
+乙3.
+SELECT ADS.sname
+FROM Attends ADS, Course C, Session S
+WHERE C.code = 'CSEN501' AND S.code = C.code AND C.day = S.day AND S.day = ADS.day AND C.slot = S.slot AND S.slot = ADS.slot AND C.pname = S.pname AND S.pname = ADS.pname;
+
+乙4.
+SELECT DISTINCT ADS.sname
+FROM Attends ADS
+WHERE NOT EXISTS
+	(SELECT *
+	 FROM Session S, Course C
+	 WHERE C.day = S.day AND S.day = ADS.day AND C.slot = S.slot AND S.slot = ADS.slot AND C.pname = S.pname AND S.pname = ADS.pname AND S.code = C.code AND NOT C.major = 'CSEN');
+
+乙5.
+SELECT C.code
+FROM Course C
+WHERE NOT EXISTS
+	(SELECT *
+	 FROM Course C2
+	 WHERE NOT C.code = C2.code AND NOT EXISTS
+		(SELECT *
+		 FROM Conflicting CF
+		 WHERE (C.code = CF.code1 AND C2.code = CF.code2) OR
+		       (C.code = CF.code2 AND C2.code = CF.code1)));
+
+乙6.
+SELECT CF.code1, CF.code2
+FROM Course C1, Course C2, Conflicting CF
+WHERE C1.day = C2.day AND C1.slot = C2.slot AND NOT C1.code = C2.code AND (C1.code, C2.code) IN
+	(SELECT CF.code1, CF.code2
+	 FROM Conflicting CF2) ;
+
+丙1.
+SELECT *
+FROM Flight F
+WHERE F.Depart = 'PHL' AND F.Arrive = 'SFO' AND F.ATime < TIME('17:00:00')
+ORDER BY F.DTime ASC;
+
+丙2.
+SELECT F1.`F#`, F1.Arrive, F2.`F#`, F1.DTime, F2.ATime
+FROM Flight F1, Flight F2
+WHERE F1.Depart = 'PHL' AND F2.Arrive = 'SFO' AND F1.Arrive = F2.Depart AND (F2.DTime - F1.ATime) < TIME('02:00:00') AND (F2.DTime - F1.ATime) > TIME('01:00:00') AND F1.DTime > TIME('00:00:00') AND F1.DTime < TIME('05:00:00') AND F2.DTime > TIME('00:00:00') AND F2.DTime < TIME('05:00:00');
+
+丙4.
+SELECT F.Depart 
+FROM Flight F
+WHERE F.Depart NOT IN
+	(SELECT F2.Depart
+	 FROM Flight F2
+	 WHERE F2.Arrive = 'PHL')
+UNION
+SELECT F1.Arrive
+FROM Flight F1
+WHERE F1.Arrive NOT IN
+	(SELECT F3.Depart
+	 FROM Flight F3
+	 WHERE F3.Arrive = 'PHL');
+
+丙5.
+SELECT F.Depart, COUNT(F.`F#`) AS NumOfDeparture
+FROM Flight F
+GROUP BY F.Depart
+HAVING 1 < (SELECT COUNT(DISTINCT F.Arrive));
+
+丙6.
+SELECT F.Depart
+FROM Flight F
+WHERE NOT F.Depart = 'PHL' AND NOT EXISTS
+	(SELECT F2.Arrive
+	 FROM Flight F2
+	 WHERE F2.Depart = 'PHL' AND F2.Arrive NOT IN
+		(SELECT F.Arrive))
+GROUP BY F.Depart;

@@ -1,0 +1,236 @@
+A.
+	1.
+	SELECT MAX(S.age)
+	FROM student S;
+	2.
+	SELECT S.sname
+	FROM student S
+	WHERE S.age = (
+	SELECT MAX(S2.age)
+	FROM student S2);
+	3.
+	SELECT S.sname, S.gpa
+	FROM student S, enroll E
+	WHERE S.sid = E.sid AND
+	E.cno = '111';
+	4.
+	SELECT S.sname, M.dname
+	FROM student S, enroll E, major M
+	WHERE S.sid = E.sid AND
+	E.dname = 'MATH' AND
+	M.sid = S.sid;
+	5.
+	SELECT DISTINCT S.sname
+	FROM student S, enroll E, enroll E2
+	WHERE S.sid = E.sid AND
+	S.sid = E2.sid AND
+	E.dname = 'MATH' AND
+	E2.dname = 'CS'; *如果有學生各休兩堂以上要加dis
+	6.
+	SELECT M.dname, avg(S.age), MAX(S.age)-MIN(S.age)
+	FROM student S, major M
+	WHERE M.sid = S.sid
+	GROUP BY M.dname;
+	7.
+	SELECT DISTINCT S.sname
+	FROM student S, enroll E, section SE
+	WHERE SE.pname = 'Canny' AND
+	SE.sectno = E.sectno AND
+	SE.cno = E.cno AND
+	SE.dname = E.dname AND
+	E.sid = S.sid;  *如果canny有兩堂課都有的學生需要distinct
+	8.
+	SELECT COUNT(DISTINCT S.sid)
+	FROM student S, Major M
+	WHERE S.sid =M.sid AND
+	S.sid IN(
+	SELECT S2.sid
+	FROM student S2, major M2
+	WHERE S2.sid = M2.sid AND
+	M2.sid = M.sid AND
+	NOT(M2.dname = M.dname)); * 因為測資如果有3major就需要distinct
+	9.
+	SELECT S.sname
+	FROM student S
+	WHERE S.year = 1 AND
+	S.age >= all(
+	SELECT S2.age
+	FROM student S2
+	WHERE S.year = 1);
+	10.
+	SELECT S.sid, S.sname, S.gpa
+	FROM student S
+	WHERE NOT EXISTS(
+	SELECT C.cno
+	FROM course C
+	WHERE C.dname ='EE' AND
+	NOT EXISTS(
+	SELECT E.cno
+	FROM enroll E
+	WHERE S.sid = E.sid AND
+	E.dname = 'EE'
+	));
+	11.
+	SELECT DISTINCT D.dname, D.numphds 
+	FROM major M, dept D
+	WHERE M.dname =D.dname AND
+	NOT EXISTS(
+	SELECT E.sid
+	FROM enroll E
+	WHERE E.sid = M.sid AND
+	E.dname = 'CS')
+	GROUP BY M.dname; *會出現duplicate的dept
+	12.
+	SELECT Temp.sname, MAX(Temp.MAXG)
+	FROM (
+	SELECT S.sname, S.age AS AGE, Max(E.grade) AS MAXG
+	FROM enroll E, student S
+	WHERE S.sid = E.sid AND
+	(E.cno IN (
+	SELECT E2.cno
+	FROM enroll E2, enroll E3, course C2, course C3
+	WHERE E2.dname = 'CS' AND
+	E3.dname = 'Math' AND
+	C2.cno = E2.cno AND
+	C3.cno = E3.cno AND
+	C2.cname = C3.cname) OR
+	E.cno IN(
+	SELECT E4.cno
+	FROM enroll E4, enroll E5, course C4, course C5
+	WHERE E4.dname = 'Math' AND
+	E5.dname = 'CS' AND
+	C4.cno = E4.cno AND
+	C5.cno = E5.cno AND
+	C4.cname = C5.cname))
+	GROUP BY S.sid
+	Order BY MAXG DESC) AS Temp
+	GROUP BY Temp.AGE;
+	13.
+	SELECT S.sname
+	FROM student S
+	WHERE (
+	SELECT AVG(E.grade)
+	FROM enroll E
+	WHERE E.sid = S.sid) >= ALL(
+	SELECT AVG(E2.grade)
+	FROM enroll E2, student S2
+	WHERE E2.sid = S2.sid
+	GROUP BY E2.sid);
+	14.
+	SELECT S.sid, S.sname, S.sex, S.age, S.year, S.gpa
+	FROM student S
+	WHERE NOT EXISTS(
+	SELECT C.cno
+	FROM course C
+	WHERE C.cno NOT IN(
+	SELECT E.cno
+	FROM enroll E
+	WHERE S.sid = E.sid
+	));
+	15.
+	SELECT S.sname, S.gpa, AVG(E.grade)
+	FROM student S, enroll E
+	WHERE S.gpa >= 3.0 AND
+	3.2 <= (
+	SELECT AVG(E.grade)
+	FROM enroll E2
+	WHERE E2.sid = S.sid AND
+	E.dname = 'CS'
+	GROUP BY E2.sid) AND
+	E.sid = S.sid
+	GROUP BY E.sid;
+B.
+	1.
+	SELECT DISTINCT B.Game
+	FROM Bets B
+	WHERE B.Outcome = 'W';
+	2.
+	SELECT O.Game
+	FROM `Out` O
+	WHERE O.Game NOT IN(
+	SELECT B.Game
+	FROM Bets B);
+	3.
+	SELECT B.Who
+	FROM Bets B
+	WHERE B.Outcome = 'L'
+	GROUP BY B.Who
+	HAVING COUNT(B.Game) > 1;
+	4.
+	SELECT B.Game
+	FROM Bets B
+	GROUP BY B.Game
+	HAVING COUNT(DISTINCT B.Outcome) = 1;
+	5.
+	SELECT B.Who
+	FROM Bets B
+	GROUP BY B.Who
+	HAVING COUNT(DISTINCT B.Game) =(
+	SELECT COUNT(DISTINCT Temp.Game)
+	FROM 
+	(SELECT B2.Game
+	FROM Bets B2
+	UNION
+	SELECT O.Game
+	FROM `Out` O) AS Temp);
+	6.
+	SELECT B.Game, B.Outcome, COUNT(*)
+	FROM Bets B
+	GROUP BY B.Game, B.Outcome;
+	7.
+	SELECT Temp.Game AS Game
+	FROM (
+	SELECT B.Game, SUM(B.Amt) AS amtsum
+	FROM Bets B
+	WHERE B.Outcome = 'W' AND
+	B.Game IN (
+	SELECT O.Game
+	FROM `Out` O
+	WHERE O.Outcome ='W')
+	GROUP BY B.Game) AS Temp 
+	
+	WHERE Temp.amtsum = (
+	
+	SELECT MAX(Temp2.amtsum)
+	FROM (
+	SELECT SUM(B2.Amt) AS amtsum
+	FROM Bets B2
+	WHERE B2.Outcome = 'W' AND
+	B2.Game IN (
+	SELECT O2.Game
+	FROM `Out` O2
+	WHERE O2.Outcome ='W')
+	GROUP BY B2.Game) AS Temp2);
+	8.
+	SELECT DISTINCT B.Who
+	FROM Bets B
+	WHERE B.Game = 'Michigan' AND
+	B.Who IN(
+	SELECT B2.Who
+	FROM Bets B2
+	GROUP BY B2.Who
+	HAVING COUNT(DISTINCT B2.Game) = 1);
+	9.
+	SELECT B.Who
+	FROM Bets B
+	WHERE B.Game = 'Michigan' AND
+	B.Amt <= ALL(
+	SELECT B.Amt
+	FROM Bets B
+	WHERE B.Game = 'Michigan');
+	10.
+	SELECT O.Game
+	FROM `Out` O
+	WHERE O.Outcome = 'L';
+	11.
+	SELECT B.Who
+	FROM Bets B
+	WHERE NOT(B.Game = 'LSU') AND
+	B.Game = 'Michigan';
+	12.
+	SELECT B.Game
+	FROM Bets B
+	WHERE B.Amt > (
+	SELECT SUM(B2.Amt)
+	FROM Bets B2
+	WHERE B2.Game = 'Michigan');
